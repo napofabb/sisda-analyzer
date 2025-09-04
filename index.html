@@ -1,72 +1,117 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SISDA AI Analyzer</title>
+  <title>Gemini 1.5 Pro Demo</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; }
-    h1 { color: #333; }
-    #chat-box { border: 1px solid #ccc; padding: 10px; background: #fff; height: 300px; overflow-y: auto; }
-    .msg { margin: 5px 0; }
-    .user { font-weight: bold; color: #007bff; }
-    .bot { font-weight: bold; color: #28a745; }
-    #prompt { width: 80%; padding: 8px; }
-    #send { padding: 8px 12px; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    #chat {
+      width: 100%;
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 15px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .user {
+      background: #e1f5fe;
+      text-align: right;
+    }
+    .bot {
+      background: #e8f5e9;
+      text-align: left;
+    }
   </style>
 </head>
 <body>
-  <h1>SISDA AI Analyzer</h1>
-  <div id="chat-box"></div>
-  <br/>
-  <input id="prompt" type="text" placeholder="Type your question..." />
-  <button id="send">Send</button>
+  <div id="chat">
+    <h2>💬 Gemini 1.5 Pro Chat</h2>
+    <div id="messages"></div>
+    <textarea id="userInput" placeholder="Type your message..."></textarea>
+    <button onclick="sendMessage()">Send</button>
+  </div>
 
   <script>
-    const API_KEY = "AIzaSyBESvcUFk6xjgc0CTOCJ3nGMZGrx6zcAcY"; // <-- ganti dengan API Key kau
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
+    const API_KEY = "AIzaSyBESvcUFk6xjgc0CTOCJ3nGMZGrx6zcAcY"; // 🔑 Letak API Key Gemini kau
+    const MODEL = "models/gemini-1.5-pro"; // tukar ke flash kalau nak laju
 
     async function sendMessage() {
-      const promptInput = document.getElementById("prompt");
-      const chatBox = document.getElementById("chat-box");
+      const input = document.getElementById("userInput");
+      const messagesDiv = document.getElementById("messages");
 
-      const userText = promptInput.value.trim();
-      if (!userText) return;
+      // Papar mesej user
+      const userMsg = document.createElement("div");
+      userMsg.classList.add("message", "user");
+      userMsg.innerText = input.value;
+      messagesDiv.appendChild(userMsg);
 
-      // Tunjuk mesej user
-      chatBox.innerHTML += `<div class="msg user">You: ${userText}</div>`;
-      promptInput.value = "";
-
+      // Call API Gemini
       try {
-        const response = await fetch(API_URL, {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent?key=" + API_KEY, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: userText }] }]
-          })
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: input.value }]
+              }
+            ]
+          }),
         });
 
         const data = await response.json();
+        console.log(data);
 
-        if (data.candidates && data.candidates.length > 0) {
-          const botText = data.candidates[0].content.parts[0].text;
-          chatBox.innerHTML += `<div class="msg bot">Bot: ${botText}</div>`;
-        } else {
-          chatBox.innerHTML += `<div class="msg bot">Bot: (No response)</div>`;
-        }
+        let botReply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "⚠️ Error: Tiada jawapan dari Gemini.";
 
-      } catch (err) {
-        chatBox.innerHTML += `<div class="msg bot">Error: ${err.message}</div>`;
+        // Papar mesej bot
+        const botMsg = document.createElement("div");
+        botMsg.classList.add("message", "bot");
+        botMsg.innerText = botReply;
+        messagesDiv.appendChild(botMsg);
+
+      } catch (error) {
+        console.error(error);
+        const errorMsg = document.createElement("div");
+        errorMsg.classList.add("message", "bot");
+        errorMsg.innerText = "⚠️ Error: " + error.message;
+        messagesDiv.appendChild(errorMsg);
       }
 
-      chatBox.scrollTop = chatBox.scrollHeight;
+      input.value = "";
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
-
-    document.getElementById("send").addEventListener("click", sendMessage);
-    document.getElementById("prompt").addEventListener("keypress", function(e) {
-      if (e.key === "Enter") sendMessage();
-    });
   </script>
 </body>
 </html>
-
